@@ -9,59 +9,65 @@ export default function Home() {
     try {
       const res = await fetch('/api/departures');
       const json = await res.json();
+      console.log("Data från API:", json); // Kolla i webbläsarens konsol!
       setData(json);
       setLoading(false);
-    } catch (e) { console.error("Error fetching", e); }
+    } catch (e) { 
+      console.error("Fetch error:", e);
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchDepartures();
-    const timer = setInterval(fetchDepartures, 30000); // Uppdatera var 30:e sek
+    const timer = setInterval(fetchDepartures, 30000);
     return () => clearInterval(timer);
   }, []);
 
-  if (loading) return <div className="p-10">Laddar avgångar...</div>;
+  if (loading) return <div className="p-10 font-sans">Hämtar tider från SL...</div>;
 
   return (
-    <main className="max-w-md mx-auto p-6 bg-slate-50 min-h-screen">
-      <h1 className="text-3xl font-extrabold mb-8 text-blue-900">Nästa Resa</h1>
+    <main className="max-w-md mx-auto p-6 bg-gray-50 min-h-screen font-sans">
+      <h1 className="text-3xl font-black mb-8 text-blue-900 italic">SL REALTID</h1>
 
-      {data.map((stop) => (
-        <section key={stop.stopId} className="mb-10 bg-white rounded-xl shadow-sm p-5">
-          <h2 className="text-lg font-bold text-gray-500 uppercase tracking-wider mb-4 border-b pb-2">
-            {stop.stopName}
-          </h2>
-          
-          <div className="space-y-4">
-            {stop.departures
-              .filter(d => {
-                // Solhagavägen: Buss 117 mot Brommaplan
-                if (stop.stopName === 'Solhagavägen') {
-                  return d.line.designation === '117' && d.destination.includes('Brommaplan');
-                }
-                // Spånga: Pendeltåg söderut (Destination t.ex. Västerhaninge, Nynäshamn, Tumba)
-                if (stop.stopName === 'Spånga station') {
-                   return d.transport_mode === 'TRAIN' && d.direction_code === 1; 
-                }
-                return false;
-              })
-              .slice(0, 3) // Ta de 3 närmaste
-              .map((d, i) => (
-                <div key={i} className="flex justify-between items-center">
+      {data.map((stop) => {
+        // Filtrera fram tågen/bussarna här
+        const filtered = stop.departures.filter(d => {
+          if (stop.stopName === 'Solhagavägen') {
+            return d.line?.designation === '117';
+          }
+          if (stop.stopName === 'Spånga station') {
+            return d.transport_mode === 'TRAIN'; 
+          }
+          return true;
+        }).slice(0, 3);
+
+        return (
+          <section key={stop.stopId} className="mb-10 bg-white rounded-2xl shadow-lg p-5 border-l-8 border-blue-600">
+            <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">
+              {stop.stopName}
+            </h2>
+            
+            <div className="space-y-4">
+              {filtered.length > 0 ? filtered.map((d, i) => (
+                <div key={i} className="flex justify-between items-center border-b border-gray-100 pb-2">
                   <div className="flex items-center gap-3">
-                    <span className={`px-2 py-1 rounded text-white font-bold text-sm ${d.transport_mode === 'BUS' ? 'bg-red-500' : 'bg-blue-600'}`}>
-                      {d.line.designation}
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded font-bold">
+                      {d.line?.designation || '???'}
                     </span>
-                    <span className="font-medium text-gray-700">{d.destination}</span>
+                    <span className="font-semibold text-gray-700">{d.destination}</span>
                   </div>
-                  <span className="text-xl font-mono font-black text-blue-700">
-                    {d.display} {/* Visar t.ex. "5 min" eller "14:45" */}
+                  <span className="text-xl font-mono font-bold text-orange-600">
+                    {d.display || 'Nu'}
                   </span>
                 </div>
-              ))}
-          </div>
-        </section>
-      ))}
+              )) : (
+                <p className="text-gray-400 italic text-sm">Inga kommande avgångar hittades just nu...</p>
+              )}
+            </div>
+          </section>
+        );
+      })}
     </main>
   );
 }
