@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   const API_KEY = process.env.TRAFIKLAB_KEY;
-  
-  // Vi testar att hämta för båda typerna av ID samtidigt för säkerhets skull
+
+  // 1. Kolla om nyckeln ens finns
+  if (!API_KEY) {
+    return NextResponse.json({ error: 'API-nyckel (TRAFIKLAB_KEY) saknas i Vercel' }, { status: 500 });
+  }
+
   const STOPS = [
     { id: '9524', name: 'Spånga station' },
     { id: '3503', name: 'Solhagavägen' }
@@ -11,28 +15,37 @@ export async function GET() {
 
   try {
     const results = await Promise.all(STOPS.map(async (stop) => {
-      // Vi provar den officiella v4-realtiden
-      const res = await fetch(`https://api.sl.se/api2/realtidstidsinfov4.json?key=${API_KEY}&siteid=${stop.id}&timewindow=60`);
-      const data = await res.json();
+      const url = `https://api.sl.se/api2/realtidstidsinfov4.json?key=${API_KEY}&siteid=${stop.id}&timewindow=60`;
       
-      let departures = [];
+      const res = await fetch(url);
       
-      if (data.ResponseData) {
-        const buses = data.ResponseData.Buses || [];
-        const trains = data.ResponseData.Trains || [];
-        
-        departures = [...buses, ...trains].map(d => ({
-          line: d.LineNumber,
-          destination: d.Destination,
-          time: d.DisplayTime
-        }));
+      // 2. Kolla om SL svarar med fel (t.ex. 401 Unauthorized)
+      if (!res.ok) {
+        throw new Error(`SL svarade med status: ${res.status}`);
       }
+
+      const data = await res.json();
+
+      // 3. Kolla om SL skickade ett felmeddelande i själva JSON-datan
+      if (data.StatusCode !== 0) {
+        throw new Error(`SL API Error: ${data.Message || 'Okänt fel'}`);
+      }
+
+      const departures = [
+        ...(data.ResponseData.Buses || []),
+        ...(data.ResponseData.Trains || [])
+      ].map(d => ({
+        line: d.LineNumber,
+        destination: d.Destination,
+        time: d.DisplayTime
+      }));
 
       return { stop: stop.name, departures };
     }));
 
     return NextResponse.json(results);
-  } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (error) {
+    console.error("Backend error:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
