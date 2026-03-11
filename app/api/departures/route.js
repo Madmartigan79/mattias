@@ -1,59 +1,68 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  // .trim() tar bort osynliga mellanslag/radbrytningar
-  const API_KEY = process.env.TRAFIKLAB_KEY?.trim(); 
+  // .trim() tar bort eventuella dolda mellanslag från Vercel-inställningarna
+  const API_KEY = process.env.TRAFIKLAB_KEY?.trim();
 
+  // Kontrollera att nyckeln finns
   if (!API_KEY) {
-    return NextResponse.json({ error: 'API-nyckel saknas' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'API-nyckel (TRAFIKLAB_KEY) saknas i Vercels inställningar.' },
+      { status: 500 }
+    );
   }
 
-  export async function GET() {
-  const API_KEY = process.env.TRAFIKLAB_KEY;
-
-  // 1. Kolla om nyckeln ens finns
-  if (!API_KEY) {
-    return NextResponse.json({ error: 'API-nyckel (TRAFIKLAB_KEY) saknas i Vercel' }, { status: 500 });
-  }
-
+  // Hållplats-ID:n (SiteId)
   const STOPS = [
-    { id: '9524', name: 'Spånga station' },
-    { id: '3503', name: 'Solhagavägen' }
+    { id: '3503', name: 'Solhagavägen' },
+    { id: '9524', name: 'Spånga station' }
   ];
 
   try {
-    const results = await Promise.all(STOPS.map(async (stop) => {
-      const url = `https://api.sl.se/api2/realtidstidsinfov4.json?key=${API_KEY}&siteid=${stop.id}&timewindow=60`;
-      
-      const res = await fetch(url);
-      
-      // 2. Kolla om SL svarar med fel (t.ex. 401 Unauthorized)
-      if (!res.ok) {
-        throw new Error(`SL svarade med status: ${res.status}`);
-      }
+    const results = await Promise.all(
+      STOPS.map(async (stop) => {
+        // Vi använder SL Realtid v4 som är den mest stabila för dessa ID-nummer
+        const url = `https://api.sl.se/api2/realtidstidsinfov4.json?key=${API_KEY}&siteid=${stop.id}&timewindow=60`;
+        
+        const res = await fetch(url, { next: { revalidate: 0 } }); // Tvinga färsk data
+        
+        if (!res.ok) {
+          throw new Error(`SL svarade med felkod: ${res.status}`);
+        }
 
-      const data = await res.json();
+        const data = await res.json();
 
-      // 3. Kolla om SL skickade ett felmeddelande i själva JSON-datan
-      if (data.StatusCode !== 0) {
-        throw new Error(`SL API Error: ${data.Message || 'Okänt fel'}`);
-      }
+        // Om SL skickar ett tekniskt fel (t.ex. ogiltig nyckel)
+        if (data.StatusCode !== 0) {
+          throw new Error(data.Message || 'Fel hos SL:s API');
+        }
 
-      const departures = [
-        ...(data.ResponseData.Buses || []),
-        ...(data.ResponseData.Trains || [])
-      ].map(d => ({
-        line: d.LineNumber,
-        destination: d.Destination,
-        time: d.DisplayTime
-      }));
+        // Hämta alla fordonstyper och lägg i en lista
+        const buses = data.ResponseData?.Buses || [];
+        const trains = data.ResponseData?.Trains || [];
+        
+        // Här "tvättar" vi datan så att den är enkel för page.js att läsa
+        const departures = [...buses, ...trains].map((item) => ({
+          line: item.LineNumber,
+          destination: item.Destination,
+          time: item.DisplayTime,
+          direction: item.JourneyDirection, // 1 brukar vara söderut/mot city
+          type: item.TransportMode // BUS eller TRAIN
+        }));
 
-      return { stop: stop.name, departures };
-    }));
+        return {
+          stop: stop.name,
+          departures: departures
+        };
+      })
+    );
 
     return NextResponse.json(results);
   } catch (error) {
-    console.error("Backend error:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Backend Error:', error.message);
+    return NextResponse.json(
+      { error: `Kunde inte hämta data: ${error.message}` },
+      { status: 500 }
+    );
   }
 }
