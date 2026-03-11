@@ -86,7 +86,7 @@ const DepartureBoard = () => {
 
       {data.map((stop, idx) => (
         <section key={idx} style={{ marginBottom: '2.5rem' }}>
-          <h2 style={stopNameStyle}>FRÅN 
+          <h2 style={stopNameStyle}>
             {stop.stop}
           </h2>
           
