@@ -81,7 +81,7 @@ const DepartureBoard = () => {
         textAlign: 'center', 
         textTransform: 'uppercase' 
       }}>
-        NÄSTA AVGÅNG
+        MOT SKOLA OCH JOBB
       </h1>
 
       {data.map((stop, idx) => (
