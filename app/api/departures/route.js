@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
+  // .trim() tar bort osynliga mellanslag/radbrytningar
+  const API_KEY = process.env.TRAFIKLAB_KEY?.trim(); 
+
+  if (!API_KEY) {
+    return NextResponse.json({ error: 'API-nyckel saknas' }, { status: 500 });
+  }
+
+  export async function GET() {
   const API_KEY = process.env.TRAFIKLAB_KEY;
 
   // 1. Kolla om nyckeln ens finns
