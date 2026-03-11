@@ -1,49 +1,46 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  // De korta ID-numren fungerar perfekt i det nya systemet
+  // Vi lägger in kraven direkt i länkarna till SL!
   const STOPS = [
-    { id: '3503', name: 'Solhagavägen' },
-    { id: '9524', name: 'Spånga station' }
+    { 
+      name: 'Solhagavägen', 
+      url: 'https://transport.integration.sl.se/v1/sites/3503/departures?transport=BUS&line=117&forecast=60'
+    },
+    { 
+      name: 'Spånga station', 
+      url: 'https://transport.integration.sl.se/v1/sites/9524/departures?transport=TRAIN&direction=1&forecast=60'
+    }
   ];
 
   try {
     const results = await Promise.all(
       STOPS.map(async (stop) => {
-        // HÄR ÄR MAGIN: Den nya öppna adressen som inte kräver någon API-nyckel!
-        const url = `https://transport.integration.sl.se/v1/sites/${stop.id}/departures`;
-        
-        // cache: 'no-store' ser till att Vercel aldrig sparar gammal data
-        const res = await fetch(url, { cache: 'no-store' }); 
-        
-        if (!res.ok) {
-          throw new Error(`SL svarade med felkod: ${res.status}`);
-        }
+        const res = await fetch(stop.url, { cache: 'no-store' }); 
+        if (!res.ok) throw new Error(`Felkod från SL: ${res.status}`);
 
         const data = await res.json();
 
-        // I det nya systemet ligger allt i en lista som heter "departures"
-        const departures = (data.departures || []).map((item) => ({
-          line: item.line?.designation || "???",
+        // 1. Plocka ut och formatera de viktiga fälten
+        let departures = (data.departures || []).map((item) => ({
+          line: item.line?.designation || item.line?.id || "???",
           destination: item.destination,
           time: item.display,
-          direction: item.direction_code, 
-          type: item.transport_mode 
+          // Tvingar fram rätt färgkodning för frontend
+          type: stop.name === 'Spånga station' ? 'TRAIN' : 'BUS' 
         }));
 
-        return {
-          stop: stop.name,
-          departures: departures
-        };
+        // 2. Extra filtrering för att bara visa 117 mot just Brommaplan
+        if (stop.name === 'Solhagavägen') {
+          departures = departures.filter(d => d.destination.includes('Brommaplan'));
+        }
+
+        return { stop: stop.name, departures: departures };
       })
     );
 
     return NextResponse.json(results);
   } catch (error) {
-    console.error('Backend Error:', error.message);
-    return NextResponse.json(
-      { error: `Kunde inte hämta data: ${error.message}` },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Kunde inte hämta data" }, { status: 500 });
   }
 }
