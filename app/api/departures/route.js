@@ -1,23 +1,45 @@
 import { NextResponse } from 'next/server';
 
-const API_KEY = process.env.TRAFIKLAB_KEY; // Din nyckel från "Trafiklab Realtime APIs"
-const BASE_URL = 'https://realtime-api.trafiklab.se/v1';
-
-const STOPS = [
-  { id: '740000011', name: 'Spånga station' }, // Pendeltåg
-  { id: '740043328', name: 'Solhagavägen' }    // Buss 117
-];
-
 export async function GET() {
+  const API_KEY = process.env.TRAFIKLAB_KEY;
+  
+  // Vi använder de klassiska Site-ID:n som fungerar bäst med SL:s standard-API
+  const STOPS = [
+    { id: '9524', name: 'Spånga station' },
+    { id: '3503', name: 'Solhagavägen' }
+  ];
+
   try {
     const results = await Promise.all(STOPS.map(async (stop) => {
-      const res = await fetch(`${BASE_URL}/departures/${stop.id}?key=${API_KEY}`);
+      // Vi lägger till forecast=60 för att se en timme framåt
+      const url = `https://api.sl.se/api2/realtidstidsinfov4.json?key=${API_KEY}&siteid=${stop.id}&timewindow=60`;
+      
+      const res = await fetch(url);
       const data = await res.json();
-      return { stopName: stop.name, stopId: stop.id, departures: data.departures || [] };
+
+      // Här mappar vi om datan så att den passar din frontend
+      // Vi kombinerar bussar och tåg i en och samma lista
+      const allDepartures = [
+        ...(data.ResponseData.Buses || []),
+        ...(data.ResponseData.Trains || [])
+      ].map(d => ({
+        line: { designation: d.LineNumber },
+        destination: d.Destination,
+        display: d.DisplayTime,
+        transport_mode: d.TransportMode,
+        direction: d.JourneyDirection
+      }));
+
+      return { 
+        stopName: stop.name, 
+        stopId: stop.id, 
+        departures: allDepartures 
+      };
     }));
 
     return NextResponse.json(results);
   } catch (error) {
-    return NextResponse.json({ error: 'Kunde inte hämta data' }, { status: 500 });
+    console.error("API Error:", error);
+    return NextResponse.json({ error: 'Kunde inte hämta data från SL' }, { status: 500 });
   }
 }
