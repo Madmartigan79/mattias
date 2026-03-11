@@ -1,18 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  // .trim() tar bort eventuella dolda mellanslag från Vercel-inställningarna
-  const API_KEY = process.env.TRAFIKLAB_KEY?.trim();
-
-  // Kontrollera att nyckeln finns
-  if (!API_KEY) {
-    return NextResponse.json(
-      { error: 'API-nyckel (TRAFIKLAB_KEY) saknas i Vercels inställningar.' },
-      { status: 500 }
-    );
-  }
-
-  // Hållplats-ID:n (SiteId)
+  // De korta ID-numren fungerar perfekt i det nya systemet
   const STOPS = [
     { id: '3503', name: 'Solhagavägen' },
     { id: '9524', name: 'Spånga station' }
@@ -21,10 +10,11 @@ export async function GET() {
   try {
     const results = await Promise.all(
       STOPS.map(async (stop) => {
-        // Vi använder SL Realtid v4 som är den mest stabila för dessa ID-nummer
-        const url = `https://api.sl.se/api2/realtidstidsinfov4.json?key=${API_KEY}&siteid=${stop.id}&timewindow=60`;
+        // HÄR ÄR MAGIN: Den nya öppna adressen som inte kräver någon API-nyckel!
+        const url = `https://transport.integration.sl.se/v1/sites/${stop.id}/departures`;
         
-        const res = await fetch(url, { next: { revalidate: 0 } }); // Tvinga färsk data
+        // cache: 'no-store' ser till att Vercel aldrig sparar gammal data
+        const res = await fetch(url, { cache: 'no-store' }); 
         
         if (!res.ok) {
           throw new Error(`SL svarade med felkod: ${res.status}`);
@@ -32,22 +22,13 @@ export async function GET() {
 
         const data = await res.json();
 
-        // Om SL skickar ett tekniskt fel (t.ex. ogiltig nyckel)
-        if (data.StatusCode !== 0) {
-          throw new Error(data.Message || 'Fel hos SL:s API');
-        }
-
-        // Hämta alla fordonstyper och lägg i en lista
-        const buses = data.ResponseData?.Buses || [];
-        const trains = data.ResponseData?.Trains || [];
-        
-        // Här "tvättar" vi datan så att den är enkel för page.js att läsa
-        const departures = [...buses, ...trains].map((item) => ({
-          line: item.LineNumber,
-          destination: item.Destination,
-          time: item.DisplayTime,
-          direction: item.JourneyDirection, // 1 brukar vara söderut/mot city
-          type: item.TransportMode // BUS eller TRAIN
+        // I det nya systemet ligger allt i en lista som heter "departures"
+        const departures = (data.departures || []).map((item) => ({
+          line: item.line?.designation || "???",
+          destination: item.destination,
+          time: item.display,
+          direction: item.direction_code, 
+          type: item.transport_mode 
         }));
 
         return {
