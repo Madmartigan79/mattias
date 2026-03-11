@@ -3,22 +3,15 @@ import { useEffect, useState } from 'react';
 
 export default function DepartureBoard() {
   const [data, setData] = useState([]);
-  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchDepartures = async () => {
     try {
       const res = await fetch('/api/departures');
       const json = await res.json();
-      
-      if (json.error) {
-        setError(json.error);
-      } else {
-        setData(json);
-        setError(null);
-      }
+      if (!json.error) setData(json);
     } catch (e) {
-      setError("Kunde inte hämta data från servern.");
+      console.error("Kunde inte hämta data.");
     } finally {
       setLoading(false);
     }
@@ -26,18 +19,11 @@ export default function DepartureBoard() {
 
   useEffect(() => {
     fetchDepartures();
-    // Uppdatera automatiskt var 30:e sekund
-    const timer = setInterval(fetchDepartures, 30000);
+    const timer = setInterval(fetchDepartures, 30000); // 30 sek uppdatering
     return () => clearInterval(timer);
   }, []);
 
-  if (loading) {
-    return <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>Laddar avgångar... ⏳</div>;
-  }
-
-  if (error) {
-    return <div style={{ padding: '2rem', color: 'red', fontFamily: 'sans-serif' }}>Fel: {error}</div>;
-  }
+  if (loading) return <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>Laddar avgångar... ⏳</div>;
 
   return (
     <main style={{ maxWidth: '400px', margin: '2rem auto', fontFamily: 'sans-serif', padding: '0 1rem' }}>
@@ -46,19 +32,8 @@ export default function DepartureBoard() {
       </h1>
 
       {data.map((stop, idx) => {
-        // --- HÄR SKER FILTRERINGEN ---
-        const filteredDepartures = stop.departures.filter(d => {
-          if (stop.stop === 'Solhagavägen') {
-            // Filtrera: Bara buss 117 (vi antar att riktning 1 eller 2 är mot Brommaplan, 
-            // men för säkerhets skull kollar vi bara linjenumret först. Du kan finjustera detta sen!)
-            return d.line === '117';
-          }
-          if (stop.stop === 'Spånga station') {
-            // Filtrera: Bara Tåg (TRAIN) och riktning 1 (Söderut mot stan)
-            return d.type === 'TRAIN' && d.direction === 1;
-          }
-          return true;
-        }).slice(0, 3); // Begränsa till de 3 nästa avgångarna
+        // Vi väljer att bara visa de 3 första på skärmen
+        const nextThree = stop.departures.slice(0, 3);
 
         return (
           <section key={idx} style={{ marginBottom: '2rem', background: '#f9f9f9', padding: '1rem', borderRadius: '12px' }}>
@@ -67,8 +42,8 @@ export default function DepartureBoard() {
             </h2>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-              {filteredDepartures.length > 0 ? (
-                filteredDepartures.map((d, i) => (
+              {nextThree.length > 0 ? (
+                nextThree.map((d, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                       <span style={{ 
