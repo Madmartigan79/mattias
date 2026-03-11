@@ -3,17 +3,24 @@ import { useEffect, useState } from 'react';
 
 export default function Home() {
   const [data, setData] = useState([]);
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchDepartures = async () => {
     try {
       const res = await fetch('/api/departures');
       const json = await res.json();
-      console.log("Data från API:", json); // Kolla i webbläsarens konsol!
-      setData(json);
-      setLoading(false);
-    } catch (e) { 
-      console.error("Fetch error:", e);
+      
+      // Om API:et skickade ett felmeddelande istället för en lista
+      if (json.error || !Array.isArray(json)) {
+        setError(json.error || "Kunde inte ladda data");
+      } else {
+        setData(json);
+        setError(null);
+      }
+    } catch (e) {
+      setError("Kunde inte kontakta servern");
+    } finally {
       setLoading(false);
     }
   };
@@ -24,50 +31,36 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  if (loading) return <div className="p-10 font-sans">Hämtar tider från SL...</div>;
+  if (loading) return <div style={{padding: '20px', fontFamily: 'sans-serif'}}>Hämtar tider...</div>;
+  if (error) return <div style={{padding: '20px', color: 'red', fontFamily: 'sans-serif'}}>Fel: {error}</div>;
 
   return (
-    <main className="max-w-md mx-auto p-6 bg-gray-50 min-h-screen font-sans">
-      <h1 className="text-3xl font-black mb-8 text-blue-900 italic">SL REALTID</h1>
+    <main style={{maxWidth: '500px', margin: '0 auto', fontFamily: 'sans-serif', padding: '20px'}}>
+      <h1 style={{color: '#003399'}}>Mina Avgångar</h1>
 
-      {data.map((stop) => {
-        // Filtrera fram tågen/bussarna här
-        const filtered = stop.departures.filter(d => {
-          if (stop.stopName === 'Solhagavägen') {
-            return d.line?.designation === '117';
-          }
-          if (stop.stopName === 'Spånga station') {
-            return d.transport_mode === 'TRAIN'; 
-          }
-          return true;
-        }).slice(0, 3);
-
-        return (
-          <section key={stop.stopId} className="mb-10 bg-white rounded-2xl shadow-lg p-5 border-l-8 border-blue-600">
-            <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">
-              {stop.stopName}
-            </h2>
-            
-            <div className="space-y-4">
-              {filtered.length > 0 ? filtered.map((d, i) => (
-                <div key={i} className="flex justify-between items-center border-b border-gray-100 pb-2">
-                  <div className="flex items-center gap-3">
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded font-bold">
-                      {d.line?.designation || '???'}
-                    </span>
-                    <span className="font-semibold text-gray-700">{d.destination}</span>
-                  </div>
-                  <span className="text-xl font-mono font-bold text-orange-600">
-                    {d.display || 'Nu'}
+      {data.map((stop, idx) => (
+        <section key={idx} style={{marginBottom: '30px', background: 'white', padding: '15px', borderRadius: '10px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)'}}>
+          <h2 style={{fontSize: '1.2rem', borderBottom: '2px solid #eee', pb: '5px'}}>{stop.stop}</h2>
+          
+          <div style={{marginTop: '10px'}}>
+            {stop.departures && stop.departures.length > 0 ? (
+              stop.departures.map((d, i) => (
+                <div key={i} style={{display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f9f9f9'}}>
+                  <span>
+                    <strong style={{background: '#eee', padding: '2px 5px', borderRadius: '3px', marginRight: '10px'}}>
+                      {d.line}
+                    </strong> 
+                    {d.destination}
                   </span>
+                  <span style={{fontWeight: 'bold', color: '#ff4500'}}>{d.time}</span>
                 </div>
-              )) : (
-                <p className="text-gray-400 italic text-sm">Inga kommande avgångar hittades just nu...</p>
-              )}
-            </div>
-          </section>
-        );
-      })}
+              ))
+            ) : (
+              <p style={{color: '#999', fontSize: '0.9rem'}}>Inga avgångar just nu.</p>
+            )}
+          </div>
+        </section>
+      ))}
     </main>
   );
 }
