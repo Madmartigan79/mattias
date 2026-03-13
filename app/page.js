@@ -1,48 +1,45 @@
-// app/page.js
 "use client";
 import { useEffect, useState } from 'react';
 
-// === STYLING-KONSTANTER ===
-const TAVLA_BAKGRUND = '#1a1a1a'; // Mörkgrå färg för "tavlan"
-const SKYLTPANEL_BAKGRUND = '#1a1a1a'; // Samma som tavlan för sömlös känsla
-const TEXT_FÄRG = '#f0f0f0'; // Vit/gul färg för destination och linje
-const TID_FÄRG = '#FF9F00'; // Klassisk SL-orange för minuterna
-const RAM_FÄRG = '#333'; // Mörkgrå ram runt tavlan
+const TAVLA_BAKGRUND = '#1a1a1a';
+const TEXT_FÄRG = '#f0f0f0';
+const TID_FÄRG = '#FF9F00';
+const RAM_FÄRG = '#333';
 
-// Skapar ramen runt hela tavlan
+// Tajtare ram och mindre marginaler i toppen/botten
 const mainStyle = {
   maxWidth: '450px',
-  margin: '2rem auto',
-  fontFamily: '"VT323", monospace', // Vårt nya pixel-typsnitt
-  padding: '1rem',
+  margin: '0.5rem auto', // Trimmad från 2rem
+  fontFamily: '"VT323", monospace',
+  padding: '0.5rem 1rem', // Trimmad padding
   color: TEXT_FÄRG,
-  border: `10px solid ${RAM_FÄRG}`, // Tjock ram
+  border: `6px solid ${RAM_FÄRG}`, // Lite tunnare ram
   borderRadius: '4px',
-  boxShadow: '0 0 30px rgba(255,160,0, 0.15)', // En svag, varm glöd
+  boxShadow: '0 0 15px rgba(255,160,0, 0.1)',
   backgroundColor: TAVLA_BAKGRUND,
 };
 
-// Stilen för rubriken (t.ex. Solhagavägen)
+// Mindre rubriker (hållplatsnamn)
 const stopNameStyle = {
-  fontSize: '1.6rem',
-  textTransform: 'uppercase', // Alltid stora bokstäver
-  color: '#aaa', // Lite svagare vit färg
-  marginBottom: '0.8rem',
-  letterSpacing: '2px', // Lite mer luft mellan bokstäverna
-  borderBottom: `2px solid ${RAM_FÄRG}`,
-  paddingBottom: '0.5rem',
+  fontSize: '1.2rem', // Krympt från 1.6rem
+  textTransform: 'uppercase',
+  color: '#aaa',
+  marginBottom: '0.2rem', // Trimmad från 0.8rem
+  letterSpacing: '1px',
+  borderBottom: `1px solid ${RAM_FÄRG}`,
+  paddingBottom: '0.2rem', // Trimmad från 0.5rem
 };
 
-// Varje rad i avgångstabellen
+// Tätare rader för bussarna/tågen
 const departureRowStyle = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '0.8rem 0',
+  padding: '0.3rem 0', // Trimmad från 0.8rem
   borderBottom: `1px solid ${RAM_FÄRG}`,
 };
 
-const DepartureBoard = () => {
+export default function DepartureBoard() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -65,27 +62,28 @@ const DepartureBoard = () => {
   }, []);
 
   if (loading) return (
-    <div style={{ ...mainStyle, textAlign: 'center', color: TID_FÄRG }}>
+    <div style={{ ...mainStyle, textAlign: 'center', color: TID_FÄRG, padding: '2rem' }}>
       HÄMTAR AVGÅNGAR... ⏳
     </div>
   );
 
   return (
     <main style={mainStyle}>
-      {/* Rubriken längst upp på själva tavlan */}
       <h1 style={{ 
-        fontSize: '2rem', 
+        fontSize: '1.5rem', // Krympt från 2rem
         fontWeight: 'bold', 
-        marginBottom: '2rem', 
+        marginBottom: '0.8rem', // Trimmad från 2rem
+        marginTop: '0.5rem',
         color: TID_FÄRG, 
         textAlign: 'center', 
         textTransform: 'uppercase' 
       }}>
-        MOT SKOLA OCH JOBB
+        NÄSTA AVGÅNG
       </h1>
 
       {data.map((stop, idx) => (
-        <section key={idx} style={{ marginBottom: '2.5rem' }}>
+        // Krympt avstånd mellan varje hållplats-sektion
+        <section key={idx} style={{ marginBottom: '1rem' }}> 
           <h2 style={stopNameStyle}>
             {stop.stop}
           </h2>
@@ -94,38 +92,32 @@ const DepartureBoard = () => {
             {stop.departures.length > 0 ? (
               stop.departures.map((d, i) => (
                 <div key={i} style={departureRowStyle}>
-                  {/* Linje och Destination */}
-                  <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
-                    {/* Linje-bricka */}
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <span style={{ 
                       backgroundColor: d.type === 'TRAIN' ? '#0070f3' : '#e00000', 
                       color: 'white', 
-                      padding: '0.2rem 0.5rem', 
-                      borderRadius: '4px', 
-                      fontFamily: '"VT323", monospace', // Samma typsnitt här
-                      fontSize: '1.1rem',
-                      fontWeight: 'bold'
+                      padding: '0.1rem 0.4rem', 
+                      borderRadius: '3px', 
+                      fontFamily: '"VT323", monospace',
+                      fontSize: '1rem', // Krympt från 1.1rem
                     }}>
                       {d.line}
                     </span>
-                    {/* Destination */}
-                    <span style={{ fontSize: '1.4rem' }}>{d.destination}</span>
+                    <span style={{ fontSize: '1.1rem' }}>{d.destination}</span>
                   </div>
                   
-                  {/* Tid */}
                   <span style={{ 
-                    fontSize: '2.2rem', 
+                    fontSize: '1.6rem', // Krympt från 2.2rem
                     color: TID_FÄRG, 
-                    fontWeight: 'normal', // Typsnittet VT323 är redan tjockt
-                    letterSpacing: '-2px' // Lite tätare för siffrorna
+                    letterSpacing: '-1px' 
                   }}>
                     {d.time}
                   </span>
                 </div>
               ))
             ) : (
-              <div style={{ color: '#aaa', fontStyle: 'italic', fontSize: '1rem', textAlign: 'center', padding: '1rem 0' }}>
-                INGA AVGÅNGAR FUNNA.
+              <div style={{ color: '#555', fontStyle: 'italic', fontSize: '0.9rem', textAlign: 'center', padding: '0.5rem 0' }}>
+                INGA AVGÅNGAR
               </div>
             )}
           </div>
@@ -133,6 +125,4 @@ const DepartureBoard = () => {
       ))}
     </main>
   );
-};
-
-export default DepartureBoard;
+}
