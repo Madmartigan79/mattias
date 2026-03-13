@@ -1,7 +1,7 @@
 // app/layout.js
 export const metadata = {
-  title: 'Nästa Resa - Spånga & Solhagavägen',
-  description: 'Avgångstavla för buss 117 och Pendeltåg',
+  title: 'Nästa Resa',
+  description: 'Avgångstavla',
 }
 
 export default function RootLayout({ children }) {
