@@ -6,36 +6,36 @@ const TEXT_FÄRG = '#f0f0f0';
 const TID_FÄRG = '#FF9F00';
 const RAM_FÄRG = '#333';
 
-// Tajtare ram och mindre marginaler i toppen/botten
+// Mellanläge för tavlans ram och yttre marginaler
 const mainStyle = {
   maxWidth: '450px',
-  margin: '0.5rem auto', // Trimmad från 2rem
+  margin: '1rem auto', 
   fontFamily: '"VT323", monospace',
-  padding: '0.5rem 1rem', // Trimmad padding
+  padding: '0.8rem 1rem', 
   color: TEXT_FÄRG,
-  border: `6px solid ${RAM_FÄRG}`, // Lite tunnare ram
+  border: `8px solid ${RAM_FÄRG}`, 
   borderRadius: '4px',
-  boxShadow: '0 0 15px rgba(255,160,0, 0.1)',
+  boxShadow: '0 0 20px rgba(255,160,0, 0.12)',
   backgroundColor: TAVLA_BAKGRUND,
 };
 
-// Mindre rubriker (hållplatsnamn)
+// Mellanläge för rubrikerna (hållplatserna)
 const stopNameStyle = {
-  fontSize: '1.2rem', // Krympt från 1.6rem
+  fontSize: '1.4rem', 
   textTransform: 'uppercase',
   color: '#aaa',
-  marginBottom: '0.2rem', // Trimmad från 0.8rem
+  marginBottom: '0.4rem', 
   letterSpacing: '1px',
-  borderBottom: `1px solid ${RAM_FÄRG}`,
-  paddingBottom: '0.2rem', // Trimmad från 0.5rem
+  borderBottom: `2px solid ${RAM_FÄRG}`,
+  paddingBottom: '0.3rem', 
 };
 
-// Tätare rader för bussarna/tågen
+// Mellanläge för radavstånd
 const departureRowStyle = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '0.3rem 0', // Trimmad från 0.8rem
+  padding: '0.5rem 0', 
   borderBottom: `1px solid ${RAM_FÄRG}`,
 };
 
@@ -70,9 +70,9 @@ export default function DepartureBoard() {
   return (
     <main style={mainStyle}>
       <h1 style={{ 
-        fontSize: '1.5rem', // Krympt från 2rem
+        fontSize: '1.8rem', 
         fontWeight: 'bold', 
-        marginBottom: '0.8rem', // Trimmad från 2rem
+        marginBottom: '1.2rem', 
         marginTop: '0.5rem',
         color: TID_FÄRG, 
         textAlign: 'center', 
@@ -82,8 +82,8 @@ export default function DepartureBoard() {
       </h1>
 
       {data.map((stop, idx) => (
-        // Krympt avstånd mellan varje hållplats-sektion
-        <section key={idx} style={{ marginBottom: '1rem' }}> 
+        // Mellanläge för utrymmet mellan hållplatserna
+        <section key={idx} style={{ marginBottom: '1.5rem' }}> 
           <h2 style={stopNameStyle}>
             {stop.stop}
           </h2>
@@ -92,22 +92,22 @@ export default function DepartureBoard() {
             {stop.departures.length > 0 ? (
               stop.departures.map((d, i) => (
                 <div key={i} style={departureRowStyle}>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
                     <span style={{ 
                       backgroundColor: d.type === 'TRAIN' ? '#0070f3' : '#e00000', 
                       color: 'white', 
-                      padding: '0.1rem 0.4rem', 
+                      padding: '0.15rem 0.4rem', 
                       borderRadius: '3px', 
                       fontFamily: '"VT323", monospace',
-                      fontSize: '1rem', // Krympt från 1.1rem
+                      fontSize: '1.1rem', 
                     }}>
                       {d.line}
                     </span>
-                    <span style={{ fontSize: '1.1rem' }}>{d.destination}</span>
+                    <span style={{ fontSize: '1.25rem' }}>{d.destination}</span>
                   </div>
                   
                   <span style={{ 
-                    fontSize: '1.6rem', // Krympt från 2.2rem
+                    fontSize: '1.9rem', 
                     color: TID_FÄRG, 
                     letterSpacing: '-1px' 
                   }}>
@@ -116,7 +116,7 @@ export default function DepartureBoard() {
                 </div>
               ))
             ) : (
-              <div style={{ color: '#555', fontStyle: 'italic', fontSize: '0.9rem', textAlign: 'center', padding: '0.5rem 0' }}>
+              <div style={{ color: '#555', fontStyle: 'italic', fontSize: '1rem', textAlign: 'center', padding: '0.8rem 0' }}>
                 INGA AVGÅNGAR
               </div>
             )}
