@@ -6,8 +6,8 @@ const TID_FÄRG = '#FF9F00';
 const RAM_FÄRG = '#333';
 
 const mainStyle = {
-  maxWidth: '850px', 
-  width: '95%',
+  maxWidth: '800px', 
+  width: '90%',
   margin: '1rem auto', 
   fontFamily: '"VT323", monospace',
   padding: '1rem 2rem', 
@@ -102,7 +102,7 @@ export default async function DepartureBoard() {
                       borderRadius: '6px', 
                       fontFamily: '"VT323", monospace', 
                       fontSize: '1.6rem',
-                      marginRight: '3.5rem' // Det gamla iPad-vänliga sättet att skapa avstånd!
+                      marginRight: '2.5rem' // Det gamla iPad-vänliga sättet att skapa avstånd!
                     }}>
                       {d.line}
                     </span>
