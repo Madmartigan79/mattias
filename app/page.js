@@ -43,9 +43,18 @@ export default function DepartureBoard() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchDepartures = async () => {
+const fetchDepartures = async () => {
     try {
-      const res = await fetch('/api/departures');
+      // Vi lägger till en tidsstämpel (?t=...) för att lura gamla Safaris cache
+      const timestamp = new Date().getTime();
+      const res = await fetch(`/api/departures?t=${timestamp}`, {
+        // Extra headers som skriker "SPARA INTE DETTA!" till gamla webbläsare
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
       const json = await res.json();
       if (!json.error) setData(json);
     } catch (e) {
