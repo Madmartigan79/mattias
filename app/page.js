@@ -1,139 +1,90 @@
-"use client";
-import { useEffect, useState } from 'react';
+// INGEN "use client" här! Nu körs allt detta på Vercels server istället.
+export const dynamic = 'force-dynamic'; // Tvingar Vercel att alltid hämta nya tider
 
 const TAVLA_BAKGRUND = '#1a1a1a';
 const TEXT_FÄRG = '#f0f0f0';
 const TID_FÄRG = '#FF9F00';
 const RAM_FÄRG = '#333';
 
-// Mellanläge för tavlans ram och yttre marginaler
 const mainStyle = {
-  maxWidth: '450px',
-  margin: '1rem auto', 
-  fontFamily: '"VT323", monospace',
-  padding: '0.8rem 1rem', 
-  color: TEXT_FÄRG,
-  border: `8px solid ${RAM_FÄRG}`, 
-  borderRadius: '4px',
-  boxShadow: '0 0 20px rgba(255,160,0, 0.12)',
-  backgroundColor: TAVLA_BAKGRUND,
+  maxWidth: '450px', margin: '1rem auto', fontFamily: '"VT323", monospace',
+  padding: '0.8rem 1rem', color: TEXT_FÄRG, border: `8px solid ${RAM_FÄRG}`, 
+  borderRadius: '4px', boxShadow: '0 0 20px rgba(255,160,0, 0.12)', backgroundColor: TAVLA_BAKGRUND,
 };
 
-// Mellanläge för rubrikerna (hållplatserna)
 const stopNameStyle = {
-  fontSize: '1.4rem', 
-  textTransform: 'uppercase',
-  color: '#aaa',
-  marginBottom: '0.4rem', 
-  letterSpacing: '1px',
-  borderBottom: `2px solid ${RAM_FÄRG}`,
-  paddingBottom: '0.3rem', 
+  fontSize: '1.4rem', textTransform: 'uppercase', color: '#aaa', marginBottom: '0.4rem', 
+  letterSpacing: '1px', borderBottom: `2px solid ${RAM_FÄRG}`, paddingBottom: '0.3rem', 
 };
 
-// Mellanläge för radavstånd
 const departureRowStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '0.5rem 0', 
-  borderBottom: `1px solid ${RAM_FÄRG}`,
+  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+  padding: '0.5rem 0', borderBottom: `1px solid ${RAM_FÄRG}`,
 };
 
-export default function DepartureBoard() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default async function DepartureBoard() {
+  // 1. Vi hämtar datan direkt här på servern innan sidan ens skickas till iPaden
+  const STOPS = [
+    { name: 'Solhagavägen', url: 'https://transport.integration.sl.se/v1/sites/3717/departures?transport=BUS&line=117&forecast=60' },
+    { name: 'Spånga station', url: 'https://transport.integration.sl.se/v1/sites/9704/departures?transport=TRAIN&direction=1&forecast=60' },
+    { name: 'Svandammen', url: 'https://transport.integration.sl.se/v1/sites/3722/departures?transport=BUS&line=179&forecast=60' }
+  ];
 
-const fetchDepartures = () => {
-    // Tidsstämpel för att lura cache-minnet
-    const timestamp = new Date().getTime();
-    
-    // Vi använder det klassiska, lite äldre sättet att hämta data
-    fetch(`/api/departures?t=${timestamp}`, {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-    })
-    .then(function(res) {
-      return res.json();
-    })
-    .then(function(json) {
-      if (!json.error) {
-        setData(json);
-      }
-      setLoading(false); // Stänger av laddningsskärmen om det lyckas
-    })
-    .catch(function(e) {
-      console.error("Kunde inte hämta data.");
-      setLoading(false); // Stänger av laddningsskärmen även om det blir fel
-    });
-  };
+  let data = [];
+  try {
+    data = await Promise.all(
+      STOPS.map(async (stop) => {
+        const res = await fetch(stop.url, { cache: 'no-store' }); 
+        if (!res.ok) return { stop: stop.name, departures: [] };
 
-  useEffect(() => {
-    fetchDepartures();
-    const timer = setInterval(fetchDepartures, 30000); 
-    return () => clearInterval(timer);
-  }, []);
+        const json = await res.json();
+        let departures = (json.departures || []).map((item) => ({
+          line: String(item.line?.designation || item.line?.id || "???"),
+          destination: item.destination || "Okänd",
+          time: item.display || "Nu",
+          type: item.line?.transport_mode || (stop.name === 'Spånga station' ? 'TRAIN' : 'BUS')
+        }));
 
-  if (loading) return (
-    <div style={{ ...mainStyle, textAlign: 'center', color: TID_FÄRG, padding: '2rem' }}>
-      HÄMTAR AVGÅNGAR... ⏳
-    </div>
-  );
+        if (stop.name === 'Solhagavägen') departures = departures.filter(d => d.destination.toLowerCase().includes('brommaplan'));
+        if (stop.name === 'Svandammen') departures = departures.filter(d => d.destination.toLowerCase().includes('vällingby'));
 
+        return { stop: stop.name, departures: departures.slice(0, 3) };
+      })
+    );
+  } catch (error) {
+    console.error("Server-fel vid hämtning från SL");
+  }
+
+  // 2. Skickar det färdiga resultatet (och ett om-laddnings-skript) till iPad
   return (
     <main style={mainStyle}>
-      <h1 style={{ 
-        fontSize: '1.8rem', 
-        fontWeight: 'bold', 
-        marginBottom: '1.2rem', 
-        marginTop: '0.5rem',
-        color: TID_FÄRG, 
-        textAlign: 'center', 
-        textTransform: 'uppercase' 
-      }}>
+      {/* Ett klassiskt, idiotsäkert skript från 1998 som laddar om sidan var 30:e sekund */}
+      <script dangerouslySetInnerHTML={{ __html: "setTimeout(function(){ window.location.reload(true); }, 30000);" }} />
+
+      <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '1.2rem', marginTop: '0.5rem', color: TID_FÄRG, textAlign: 'center', textTransform: 'uppercase' }}>
         NÄSTA AVGÅNG
       </h1>
 
       {data.map((stop, idx) => (
-        // Mellanläge för utrymmet mellan hållplatserna
         <section key={idx} style={{ marginBottom: '1.5rem' }}> 
-          <h2 style={stopNameStyle}>
-            {stop.stop}
-          </h2>
-          
+          <h2 style={stopNameStyle}>{stop.stop}</h2>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {stop.departures.length > 0 ? (
               stop.departures.map((d, i) => (
                 <div key={i} style={departureRowStyle}>
                   <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-                    <span style={{ 
-                      backgroundColor: d.type === 'TRAIN' ? '#0070f3' : '#e00000', 
-                      color: 'white', 
-                      padding: '0.15rem 0.4rem', 
-                      borderRadius: '3px', 
-                      fontFamily: '"VT323", monospace',
-                      fontSize: '1.1rem', 
-                    }}>
+                    <span style={{ backgroundColor: d.type === 'TRAIN' ? '#0070f3' : '#e00000', color: 'white', padding: '0.15rem 0.4rem', borderRadius: '3px', fontFamily: '"VT323", monospace', fontSize: '1.1rem' }}>
                       {d.line}
                     </span>
                     <span style={{ fontSize: '1.25rem' }}>{d.destination}</span>
                   </div>
-                  
-                  <span style={{ 
-                    fontSize: '1.9rem', 
-                    color: TID_FÄRG, 
-                    letterSpacing: '-1px' 
-                  }}>
+                  <span style={{ fontSize: '1.9rem', color: TID_FÄRG, letterSpacing: '-1px' }}>
                     {d.time}
                   </span>
                 </div>
               ))
             ) : (
-              <div style={{ color: '#555', fontStyle: 'italic', fontSize: '1rem', textAlign: 'center', padding: '0.8rem 0' }}>
-                INGA AVGÅNGAR
-              </div>
+              <div style={{ color: '#555', fontStyle: 'italic', fontSize: '1rem', textAlign: 'center', padding: '0.8rem 0' }}>INGA AVGÅNGAR</div>
             )}
           </div>
         </section>
