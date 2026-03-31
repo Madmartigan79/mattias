@@ -5,37 +5,38 @@ const TEXT_FÄRG = '#f0f0f0';
 const TID_FÄRG = '#FF9F00';
 const RAM_FÄRG = '#333';
 
-// Betydligt bredare tavla med tjockare ram för iPad
 const mainStyle = {
-  maxWidth: '850px', // Ökad från 450px
+  maxWidth: '850px', 
   width: '95%',
-  margin: '2rem auto', 
+  // Minskad marginal i toppen och botten för att spara höjd
+  margin: '1rem auto', 
   fontFamily: '"VT323", monospace',
-  padding: '2rem', // Mer luft inuti tavlan
+  // Mindre padding på höjden, bibehållen på bredden
+  padding: '1rem 2rem', 
   color: TEXT_FÄRG, 
-  border: `12px solid ${RAM_FÄRG}`, // Tjockare ram
+  border: `12px solid ${RAM_FÄRG}`, 
   borderRadius: '8px', 
   boxShadow: '0 0 30px rgba(255,160,0, 0.15)', 
   backgroundColor: TAVLA_BAKGRUND,
 };
 
-// Större rubriker för hållplatserna
 const stopNameStyle = {
-  fontSize: '2.2rem', // Ökad från 1.4rem
+  fontSize: '2rem', 
   textTransform: 'uppercase', 
   color: '#aaa', 
-  marginBottom: '0.8rem', 
+  // Krympt marginaler för att spara plats på höjden
+  marginBottom: '0.4rem', 
   letterSpacing: '2px', 
   borderBottom: `3px solid ${RAM_FÄRG}`, 
-  paddingBottom: '0.5rem', 
+  paddingBottom: '0.3rem', 
 };
 
-// Mer luft mellan varje tidsrad
 const departureRowStyle = {
   display: 'flex', 
   justifyContent: 'space-between', 
   alignItems: 'center',
-  padding: '1rem 0', 
+  // Krympt padding för att packa raderna lite tätare
+  padding: '0.5rem 0', 
   borderBottom: `2px solid ${RAM_FÄRG}`,
 };
 
@@ -76,9 +77,10 @@ export default async function DepartureBoard() {
       <script dangerouslySetInnerHTML={{ __html: "setTimeout(function(){ window.location.reload(true); }, 30000);" }} />
 
       <h1 style={{ 
-        fontSize: '3rem', // Rejäl huvudrubrik
+        fontSize: '2.5rem', 
         fontWeight: 'bold', 
-        marginBottom: '2rem', 
+        // Krympt marginal för att spara höjd
+        marginBottom: '1rem', 
         marginTop: '0',
         color: TID_FÄRG, 
         textAlign: 'center', 
@@ -88,28 +90,31 @@ export default async function DepartureBoard() {
       </h1>
 
       {data.map((stop, idx) => (
-        <section key={idx} style={{ marginBottom: '2.5rem' }}> 
+        // Krympt avstånd mellan hållplatserna
+        <section key={idx} style={{ marginBottom: '1.2rem' }}> 
           <h2 style={stopNameStyle}>{stop.stop}</h2>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {stop.departures.length > 0 ? (
               stop.departures.map((d, i) => (
                 <div key={i} style={departureRowStyle}>
-                  {/* Här är ändringen för avståndet: gap är satt till 2rem */}
-                  <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+                  {/* Här är ändringen för avståndet: gap är rejält ökat till 3.5rem */}
+                  <div style={{ display: 'flex', gap: '3.5rem', alignItems: 'center' }}>
                     <span style={{ 
                       backgroundColor: d.type === 'TRAIN' ? '#0070f3' : '#e00000', 
                       color: 'white', 
-                      padding: '0.3rem 0.8rem', 
+                      padding: '0.2rem 0', // Ändrad padding
+                      minWidth: '70px', // Fast bredd så alla destinationer hamnar i en rak kolumn
+                      textAlign: 'center', // Centrerar texten i rutan
                       borderRadius: '6px', 
                       fontFamily: '"VT323", monospace', 
-                      fontSize: '1.8rem' // Större siffra i rutan
+                      fontSize: '1.6rem' 
                     }}>
                       {d.line}
                     </span>
-                    <span style={{ fontSize: '2rem' }}>{d.destination}</span>
+                    <span style={{ fontSize: '1.8rem' }}>{d.destination}</span>
                   </div>
                   <span style={{ 
-                    fontSize: '3.5rem', // Massiva siffror för tiden
+                    fontSize: '3rem', 
                     color: TID_FÄRG, 
                     letterSpacing: '-2px' 
                   }}>
@@ -118,7 +123,7 @@ export default async function DepartureBoard() {
                 </div>
               ))
             ) : (
-              <div style={{ color: '#555', fontStyle: 'italic', fontSize: '1.5rem', textAlign: 'center', padding: '1.5rem 0' }}>INGA AVGÅNGAR</div>
+              <div style={{ color: '#555', fontStyle: 'italic', fontSize: '1.4rem', textAlign: 'center', padding: '0.5rem 0' }}>INGA AVGÅNGAR</div>
             )}
           </div>
         </section>
