@@ -43,25 +43,31 @@ export default function DepartureBoard() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-const fetchDepartures = async () => {
-    try {
-      // Vi lägger till en tidsstämpel (?t=...) för att lura gamla Safaris cache
-      const timestamp = new Date().getTime();
-      const res = await fetch(`/api/departures?t=${timestamp}`, {
-        // Extra headers som skriker "SPARA INTE DETTA!" till gamla webbläsare
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
-      });
-      const json = await res.json();
-      if (!json.error) setData(json);
-    } catch (e) {
+const fetchDepartures = () => {
+    // Tidsstämpel för att lura cache-minnet
+    const timestamp = new Date().getTime();
+    
+    // Vi använder det klassiska, lite äldre sättet att hämta data
+    fetch(`/api/departures?t=${timestamp}`, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    })
+    .then(function(res) {
+      return res.json();
+    })
+    .then(function(json) {
+      if (!json.error) {
+        setData(json);
+      }
+      setLoading(false); // Stänger av laddningsskärmen om det lyckas
+    })
+    .catch(function(e) {
       console.error("Kunde inte hämta data.");
-    } finally {
-      setLoading(false);
-    }
+      setLoading(false); // Stänger av laddningsskärmen även om det blir fel
+    });
   };
 
   useEffect(() => {
